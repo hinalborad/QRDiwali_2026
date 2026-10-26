@@ -1,0 +1,453 @@
+:root {
+  --gold: #f2c66d;
+  --cream: #f8eedb;
+  --line: rgba(242, 198, 109, .38);
+  --horizon: 64vh; /* updated by app.js: the line of distant lights behind the countdown */
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+[hidden] { display: none !important; }
+html, body { min-height: 100%; }
+
+body {
+  background: #050822;
+  color: var(--cream);
+  font-family: 'Poppins', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  overflow-x: hidden;
+  -webkit-tap-highlight-color: transparent;
+}
+button { font: inherit; color: inherit; cursor: pointer; background: none; border: 0; }
+:focus-visible { outline: 3px solid var(--gold); outline-offset: 3px; }
+.defs { position: absolute; width: 0; height: 0; overflow: hidden; }
+
+/* ---------- Sky ---------- */
+.sky {
+  position: fixed; inset: 0; z-index: 0;
+  background:
+    radial-gradient(ellipse 70% 50% at 50% 28%, rgba(34, 48, 130, .42), rgba(34, 48, 130, 0) 70%),
+    radial-gradient(ellipse 120% 60% at 50% 105%, rgba(62, 26, 108, .6), rgba(62, 26, 108, 0) 65%),
+    linear-gradient(180deg, #060a2a 0%, #091036 40%, #0e0a33 72%, #120930 100%);
+}
+.sky::after { /* soft vignette */
+  content: ''; position: absolute; inset: 0;
+  background: radial-gradient(ellipse 85% 75% at 50% 45%, transparent 55%, rgba(2, 2, 14, .75) 100%);
+}
+.stars { position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; }
+.star {
+  position: absolute; border-radius: 50%; background: #fff6e0; opacity: .18;
+  animation: twinkle var(--d) ease-in-out infinite; animation-delay: var(--delay);
+}
+@keyframes twinkle { 50% { opacity: .7; } }
+
+/* ---------- Mandala line art (the rangoli on the floor) ---------- */
+.m-line { fill: none; stroke: #e9bd6a; stroke-width: .45; }
+.m-line.m-tint { fill: rgba(150, 110, 255, .08); }
+.m-line.m-tint2 { fill: rgba(90, 120, 255, .08); }
+.m-faint { fill: none; stroke: #e9bd6a; stroke-width: .28; opacity: .6; }
+.m-violet { fill: none; stroke: #a888ff; stroke-width: .4; opacity: .75; }
+.m-dot { fill: #f2c66d; }
+.m-fill { fill: #f2c66d; opacity: .85; }
+
+/* ---------- Distant diyas along the horizon, mirrored in the wet floor ---------- */
+.bokeh { position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; opacity: .35; transition: opacity 2.4s ease .3s; }
+body.started .bokeh { opacity: 1; }
+.bk {
+  position: absolute; left: var(--x); top: calc(var(--horizon) - var(--up));
+  width: var(--s); height: var(--s); margin: calc(var(--s) / -2) 0 0 calc(var(--s) / -2);
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--c) 0 32%, rgba(255, 160, 70, .3) 55%, rgba(255, 140, 60, 0) 70%);
+  opacity: var(--o);
+  animation: glim var(--tw) ease-in-out infinite alternate;
+}
+.bk.ref {
+  top: calc(var(--horizon) + var(--up) * .8);
+  height: calc(var(--s) * 1.7); margin-top: calc(var(--s) * -.85);
+  opacity: calc(var(--o) * .3); animation: none;
+}
+.bk.spark { background: radial-gradient(circle, #fff7da 0 20%, rgba(255, 200, 110, .75) 36%, rgba(255, 150, 60, 0) 70%); }
+@keyframes glim { from { opacity: calc(var(--o) * .5); } to { opacity: var(--o); } }
+
+.floor {
+  position: fixed; left: 0; right: 0; top: var(--horizon); bottom: 0; z-index: 0;
+  pointer-events: none; overflow: hidden;
+  background: linear-gradient(180deg, rgba(30, 22, 78, .5) 0%, rgba(11, 10, 42, .85) 35%, #060822 100%);
+}
+.floor::before {
+  content: ''; position: absolute; left: 0; right: 0; top: 0; height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255, 205, 130, .45) 30%, rgba(255, 205, 130, .45) 70%, transparent);
+}
+.floor-glow {
+  --gw: min(130vw, 980px);
+  position: absolute; left: 50%; bottom: -40px; width: var(--gw); height: 260px; margin-left: calc(var(--gw) / -2);
+  background: radial-gradient(ellipse 50% 50% at 50% 70%, rgba(255, 190, 100, .32), rgba(140, 90, 255, .14) 55%, rgba(140, 90, 255, 0) 75%);
+  opacity: .25; transition: opacity .15s linear;
+}
+.floor-mandala {
+  --fs: min(150vw, 1100px);
+  position: absolute; left: 50%; bottom: 26px; width: var(--fs); height: var(--fs);
+  margin: 0 0 calc(var(--fs) / -2) calc(var(--fs) / -2);
+  transform: scaleY(.3) rotate(0deg); /* a flat circle seen in perspective, slowly turning */
+  animation: floorspin 180s linear infinite;
+  opacity: .25; transition: opacity 2s ease .3s;
+  filter: drop-shadow(0 0 4px rgba(255, 190, 90, .55));
+}
+.floor-mandala .m-line { stroke-width: .6; }
+body.started .floor-mandala { opacity: .6; }
+@keyframes floorspin { to { transform: scaleY(.3) rotate(360deg); } }
+
+#fireworks { position: fixed; inset: 0; width: 100%; height: 100%; z-index: 1; display: block; touch-action: none; }
+.flash {
+  position: fixed; inset: 0; z-index: 1; pointer-events: none; opacity: 0;
+  background: radial-gradient(ellipse at 50% 30%, rgba(255, 190, 120, .45), rgba(255, 120, 60, 0) 70%);
+  mix-blend-mode: screen;
+}
+
+/* ---------- Hanging ornaments ---------- */
+.hangings { position: fixed; inset: 0; z-index: 2; pointer-events: none; }
+.hang {
+  position: absolute; top: 0; left: var(--x); width: 40px; margin-left: -20px;
+  transform-origin: 20px 0;
+  animation: swing var(--swing) ease-in-out infinite alternate; animation-delay: var(--delay);
+}
+.hang svg { display: block; filter: drop-shadow(0 0 4px rgba(255, 196, 100, .35)); }
+.hang .chain { fill: none; stroke: #d9a74e; stroke-width: 1; }
+.hang .bead { fill: #f2c66d; }
+.hang .pend { fill: #0d1446; stroke: #f2c66d; stroke-width: 1.4; }
+.hang .glow {
+  position: absolute; left: 50%; width: 70px; height: 70px; margin-left: -35px; border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 190, 90, .5), rgba(255, 140, 40, 0) 65%);
+  opacity: 0; transition: opacity 1s ease var(--light);
+}
+.hang .fw {
+  position: absolute; left: 50%; width: 8px; height: 16px; margin-left: -4px;
+  transform: scale(0); transform-origin: 50% 100%;
+  transition: transform .6s cubic-bezier(.2, 1.6, .4, 1) var(--light);
+}
+body.started .hang .glow { opacity: 1; }
+body.started .hang .fw { transform: scale(1); }
+@keyframes swing { from { transform: rotate(-1.6deg); } to { transform: rotate(1.6deg); } }
+
+/* ---------- Falling gold sparkles ---------- */
+.sparkles { position: fixed; inset: 0; z-index: 2; pointer-events: none; overflow: hidden; }
+.sparkles i {
+  position: absolute; top: -20px; left: var(--x); width: 2px; height: var(--h); border-radius: 2px;
+  background: linear-gradient(to top, rgba(255, 246, 216, .95), rgba(255, 214, 140, 0));
+  opacity: 0; animation: fall var(--dur) linear infinite; animation-delay: var(--delay);
+}
+@keyframes fall {
+  0% { transform: translate(0, 0) rotate(18deg); opacity: 0; }
+  12% { opacity: .8; }
+  85% { opacity: .45; }
+  100% { transform: translate(-24vw, 110vh) rotate(18deg); opacity: 0; }
+}
+
+/* ---------- Flames (shared) ---------- */
+.flame {
+  position: absolute; inset: 0;
+  /* fades all the way to the edge, so the glow around it never shows a dark rim */
+  background: radial-gradient(ellipse 50% 58% at 50% 70%, #fff 0 18%, #fff3b0 32%, #ffc247 52%, rgba(255, 130, 35, .8) 72%, rgba(255, 175, 70, .3) 90%, rgba(255, 200, 100, .06) 100%);
+  border-radius: 50% 50% 46% 46% / 64% 64% 36% 36%;
+  transform-origin: 50% 100%;
+  filter: drop-shadow(0 0 6px rgba(255, 170, 60, .75)); /* glow follows the flame's shape, so no dark rim */
+  animation: flicker var(--f, .18s) ease-in-out infinite alternate;
+}
+@keyframes flicker {
+  0% { transform: scale(1, 1) rotate(-2deg); }
+  50% { transform: scale(.92, 1.08) rotate(1.5deg); }
+  100% { transform: scale(1.04, .95) rotate(-1deg); }
+}
+
+/* ---------- Top controls & toast ---------- */
+.top-controls {
+  position: fixed; top: calc(12px + env(safe-area-inset-top)); right: 12px; z-index: 6;
+  display: flex; gap: 8px;
+}
+.round-btn {
+  width: 44px; height: 44px; border-radius: 50%;
+  display: grid; place-items: center; font-size: 1.15rem; color: var(--gold);
+  background: rgba(12, 18, 64, .55); border: 1px solid var(--line);
+  -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
+}
+.toast {
+  position: fixed; left: 50%; top: calc(72px + env(safe-area-inset-top)); z-index: 30;
+  width: max-content; max-width: calc(100% - 32px); padding: 9px 18px; border-radius: 999px;
+  background: rgba(10, 14, 52, .88); border: 1px solid var(--line);
+  font-size: .85rem; text-align: center; pointer-events: none;
+  opacity: 0; transform: translate(-50%, -8px); transition: opacity .35s, transform .35s;
+}
+.toast.show { opacity: 1; transform: translate(-50%, 0); }
+
+/* ---------- Main panel (anchored low, leaving the sky open for the show) ---------- */
+.content {
+  position: relative; z-index: 2;
+  min-height: 100vh; min-height: 100svh;
+  display: flex; flex-direction: column; align-items: center; justify-content: flex-end;
+  padding: 90px 16px calc(clamp(116px, 30vw, 152px) + env(safe-area-inset-bottom));
+  pointer-events: none; /* taps fall through to the sky to launch fireworks */
+}
+.panel {
+  position: relative; width: min(100%, 620px);
+  display: flex; flex-direction: column; align-items: center;
+  gap: clamp(8px, 1.5vh, 14px); text-align: center;
+  transition: opacity .6s ease;
+}
+.panel button { pointer-events: auto; }
+.panel > * { transition: opacity .8s ease, transform .8s ease; }
+body:not(.started) .panel > * { opacity: 0; transform: translateY(16px); }
+.panel > :nth-child(2) { transition-delay: .08s; }
+.panel > :nth-child(3) { transition-delay: .16s; }
+.panel > :nth-child(4) { transition-delay: .24s; }
+.panel > :nth-child(5) { transition-delay: .32s; }
+.panel > :nth-child(6) { transition-delay: .4s; }
+body.spotlight .panel, body.spotlight .diyas { opacity: .12; }
+
+.eyebrow {
+  display: inline-flex; align-items: center; justify-content: center; gap: .8em;
+  color: var(--gold); font-weight: 500; font-size: clamp(.72rem, 3vw, .9rem);
+  letter-spacing: .3em; text-transform: uppercase;
+  text-shadow: 0 0 12px rgba(242, 198, 109, .45);
+}
+.eyebrow .orn { font-size: .8em; letter-spacing: 0; }
+.eyebrow.greet { width: 100%; height: 1.7em; letter-spacing: normal; text-transform: none; font-size: clamp(1.05rem, 4.4vw, 1.35rem); }
+.greet .g {
+  display: inline-block; white-space: nowrap;
+  font-family: 'Tiro Devanagari Hindi', 'Nirmala UI', 'Noto Sans', serif;
+  transition: opacity .45s ease, transform .45s ease;
+}
+.greet .g.out { opacity: 0; transform: translateY(-6px); }
+
+.title {
+  font-family: 'DM Serif Display', Georgia, serif; font-weight: 400;
+  font-size: clamp(2.7rem, 12vw, 5.4rem); line-height: 1.02; white-space: nowrap;
+  color: var(--cream); text-shadow: 0 4px 24px rgba(0, 0, 0, .5);
+}
+.gold {
+  background: linear-gradient(180deg, #fff0c4 0%, #f2c66d 55%, #d29a3f 100%);
+  -webkit-background-clip: text; background-clip: text;
+  color: transparent; -webkit-text-fill-color: transparent;
+  text-shadow: none; filter: drop-shadow(0 0 14px rgba(242, 198, 109, .35));
+}
+.subtitle {
+  display: none; max-width: 38ch; font-weight: 300;
+  font-size: clamp(.9rem, 3.4vw, 1.05rem); line-height: 1.55; color: rgba(248, 238, 219, .85);
+}
+
+/* ---------- Countdown ---------- */
+.countdown {
+  display: grid; grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: clamp(8px, 2vw, 16px); width: min(100%, 540px);
+}
+.unit {
+  display: flex; flex-direction: column; align-items: center;
+  padding: clamp(8px, 2vw, 14px) 4px; border-radius: 14px;
+  background: linear-gradient(180deg, rgba(22, 30, 86, .55), rgba(10, 13, 48, .6));
+  border: 1px solid rgba(242, 198, 109, .32);
+  box-shadow: inset 0 1px 0 rgba(255, 236, 190, .14), 0 12px 30px rgba(0, 0, 0, .35);
+  -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
+}
+.num {
+  font-family: 'DM Serif Display', Georgia, serif; font-weight: 400;
+  font-size: clamp(1.9rem, 8.4vw, 3.1rem); line-height: 1.05;
+  background: linear-gradient(180deg, #fff3cf, #f2c66d 55%, #c98d36);
+  -webkit-background-clip: text; background-clip: text;
+  color: transparent; -webkit-text-fill-color: transparent;
+}
+.num.pop { animation: pop .45s ease-out; }
+@keyframes pop { 0% { transform: scale(1.2); filter: brightness(1.6); } 100% { transform: scale(1); } }
+.label {
+  margin-top: 3px; text-transform: uppercase; letter-spacing: .2em;
+  font-size: clamp(.55rem, 1.9vw, .72rem); color: rgba(248, 238, 219, .7);
+}
+.countdown.done { display: block; }
+.its-diwali {
+  font-family: 'DM Serif Display', Georgia, serif;
+  font-size: clamp(1.8rem, 7.5vw, 3rem); color: var(--gold);
+  text-shadow: 0 0 20px rgba(242, 198, 109, .7);
+}
+
+/* ---------- The five days of Diwali ---------- */
+.festival {
+  list-style: none; width: min(100%, 540px);
+  display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px;
+}
+.fday {
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px;
+  padding: 6px 2px; border-radius: 12px;
+  background: rgba(12, 18, 60, .45); border: 1px solid rgba(242, 198, 109, .18);
+}
+.fdate { font-weight: 600; font-size: clamp(.7rem, 2.6vw, .85rem); color: var(--gold); }
+.fname { font-size: clamp(.55rem, 2vw, .7rem); line-height: 1.2; opacity: .85; }
+.fday.main { border-color: rgba(242, 198, 109, .5); }
+.fday.today {
+  background: linear-gradient(180deg, #ffe3a3, #e2aa4c); border-color: transparent;
+  box-shadow: 0 0 18px rgba(242, 198, 109, .45);
+}
+.fday.today .fdate, .fday.today .fname { color: #1a1240; opacity: 1; }
+.fday.past { opacity: .45; }
+
+/* ---------- Buttons ---------- */
+.pill {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  padding: 12px 22px; border-radius: 999px;
+  border: 1px solid var(--line); background: rgba(12, 18, 64, .55);
+  color: var(--cream); font: 600 clamp(.9rem, 3.5vw, 1rem) 'Poppins', sans-serif;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, .3);
+}
+.pill:active { transform: scale(.96); }
+.pill.cta {
+  background: linear-gradient(180deg, #ffe7ae, #e7b158); color: #1b1446; border-color: transparent;
+  box-shadow: 0 8px 26px rgba(231, 177, 88, .35), inset 0 1px 0 rgba(255, 255, 255, .5);
+}
+
+/* ---------- Brass diyas on the floor (tap one to light an anaar) ---------- */
+.diyas {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 3;
+  display: flex; justify-content: center; align-items: flex-end; gap: clamp(12px, 3.4vw, 54px);
+  padding: 0 8px calc(8px + env(safe-area-inset-bottom));
+  pointer-events: none; opacity: 0; transition: opacity 1.4s ease .4s;
+}
+body.started .diyas { opacity: 1; }
+body.started.spotlight .diyas { opacity: .12; }
+.diya { --w: 50px; position: relative; width: var(--w); height: calc(var(--w) * 1.02); pointer-events: auto; border-radius: 12px; }
+.diya.d1 { --w: 60px; } /* d1 is next to the big diya, d4 is at the ends of the row */
+.diya.d2 { --w: 54px; }
+.diya.d3 { --w: 48px; }
+.diya.d4 { --w: 42px; }
+.diya.hero { --w: clamp(96px, 27vw, 132px); }
+.diya svg { position: absolute; left: 0; bottom: 0; width: 100%; height: auto; filter: drop-shadow(0 6px 10px rgba(0, 0, 0, .45)); }
+.diya .glow {
+  position: absolute; left: 50%; bottom: calc(var(--w) * .7);
+  width: calc(var(--w) * 2); height: calc(var(--w) * 2); margin: 0 0 calc(var(--w) * -1) calc(var(--w) * -1);
+  border-radius: 50%; background: radial-gradient(circle, rgba(255, 190, 90, .45), rgba(255, 140, 40, 0) 62%);
+  opacity: calc(.55 + var(--pulse, 0) * .45);
+  animation: breathe var(--f) ease-in-out infinite alternate;
+  pointer-events: none; /* the glow reaches above the diya; it must not swallow taps meant for the button */
+}
+.diya .fw { /* sits on the tip of the wick */
+  position: absolute; left: 50%; bottom: calc(var(--w) * .665);
+  width: calc(var(--w) * .1); height: calc(var(--w) * .3); margin-left: calc(var(--w) * -.05);
+}
+.diya.hero .fw { width: calc(var(--w) * .075); height: calc(var(--w) * .25); margin-left: calc(var(--w) * -.0375); }
+.diya.flare .glow { animation: flare .8s ease-out; }
+@keyframes breathe { from { transform: scale(.92); } to { transform: scale(1.05); } }
+@keyframes flare { 0% { transform: scale(1); } 30% { transform: scale(1.8); } 100% { transform: scale(1); } }
+
+/* ---------- Intro: light the diya ---------- */
+.intro {
+  position: fixed; inset: 0; z-index: 20;
+  display: flex; flex-direction: column; align-items: center; justify-content: space-between;
+  padding: clamp(72px, 16vh, 150px) 20px calc(clamp(18px, 6vh, 60px) + env(safe-area-inset-bottom));
+  text-align: center;
+  background: linear-gradient(180deg, rgba(4, 6, 26, .25), rgba(4, 6, 26, .08) 50%, rgba(4, 6, 26, .35));
+  transition: opacity 1.1s ease .2s, visibility 0s linear 1.3s;
+}
+.intro.reveal { opacity: 0; visibility: hidden; pointer-events: none; }
+.intro-copy { display: grid; justify-items: center; gap: clamp(12px, 2.4vh, 20px); transition: opacity .5s; }
+.intro.lit .intro-copy { opacity: 0; }
+.intro-title {
+  font-family: 'DM Serif Display', Georgia, serif; font-weight: 400;
+  font-size: clamp(2.1rem, 9vw, 4.4rem); line-height: 1.05; color: var(--cream);
+  text-shadow: 0 4px 24px rgba(0, 0, 0, .5);
+}
+.intro-title .gold { display: block; }
+.intro-sub { max-width: 32ch; font-weight: 300; font-size: clamp(.9rem, 3.6vw, 1.05rem); line-height: 1.55; color: rgba(248, 238, 219, .85); }
+
+.big-diya { --w: clamp(200px, min(58vw, 38vh), 300px); position: relative; width: var(--w); height: calc(var(--w) * .96); border-radius: 24px; }
+.big-diya .inner-light { opacity: .12; transition: opacity .9s ease .15s; } /* the bowl lights up from inside when lit */
+.intro.lit .big-diya .inner-light { opacity: 1; }
+.big-diya .bowl { position: absolute; left: 0; bottom: 0; width: 100%; height: auto; filter: drop-shadow(0 10px 18px rgba(0, 0, 0, .45)); }
+.big-diya::before { /* "tap me" ring around the wick */
+  content: ''; position: absolute; left: 50%; bottom: calc(var(--w) * .43);
+  width: calc(var(--w) * .5); height: calc(var(--w) * .5); margin-left: calc(var(--w) * -.25);
+  border-radius: 50%; border: 1.5px solid rgba(242, 198, 109, .6);
+  animation: ring 2s ease-out infinite;
+}
+.intro.lit .big-diya::before { display: none; }
+@keyframes ring { from { transform: scale(.6); opacity: .9; } to { transform: scale(1.3); opacity: 0; } }
+.big-diya .glow {
+  position: absolute; left: 50%; bottom: calc(var(--w) * -.35);
+  width: calc(var(--w) * 2.2); height: calc(var(--w) * 2.2); margin: 0 0 0 calc(var(--w) * -1.1);
+  border-radius: 50%; pointer-events: none;
+  background: radial-gradient(circle, rgba(255, 196, 100, .55), rgba(255, 140, 40, .15) 40%, rgba(255, 140, 40, 0) 65%);
+  opacity: 0; transform: scale(.4); transition: opacity 1s, transform 1.2s;
+}
+.intro.lit .big-diya .glow { opacity: 1; transform: scale(1); }
+.big-diya .fw {
+  position: absolute; left: 50%; bottom: calc(var(--w) * .665);
+  width: calc(var(--w) * .07); height: calc(var(--w) * .24); margin-left: calc(var(--w) * -.035);
+  transform: scale(0); transform-origin: 50% 100%;
+  transition: transform .6s cubic-bezier(.2, 1.6, .4, 1);
+}
+.intro.lit .big-diya .fw { transform: scale(1); }
+.big-diya .flame { filter: drop-shadow(0 0 14px rgba(255, 170, 60, .7)) drop-shadow(0 0 36px rgba(255, 140, 40, .35)); }
+.big-diya .light-wave {
+  position: absolute; left: 50%; bottom: calc(var(--w) * .74); width: 60px; height: 60px; margin: 0 0 -30px -30px;
+  border-radius: 50%; pointer-events: none; opacity: 0; transform: scale(0);
+  background: radial-gradient(circle, #fff6dc 0%, rgba(255, 200, 100, .85) 35%, rgba(255, 140, 0, 0) 70%);
+}
+.intro.lit .big-diya .light-wave { animation: wave 1.5s ease-out .3s forwards; }
+@keyframes wave { 0% { transform: scale(0); opacity: 1; } 70% { opacity: .85; } 100% { transform: scale(48); opacity: 0; } }
+
+/* ---------- Rangoli studio ---------- */
+.studio {
+  position: fixed; inset: 0; z-index: 14;
+  display: flex; flex-direction: column;
+  padding: env(safe-area-inset-top) 0 env(safe-area-inset-bottom);
+  background: radial-gradient(ellipse at 50% 40%, #16205a, #060a26 75%);
+}
+.studio-bar { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 10px 12px 4px; }
+.studio-bar h2 { font-family: 'DM Serif Display', Georgia, serif; font-weight: 400; font-size: clamp(1.25rem, 5vw, 1.7rem); color: var(--gold); text-align: center; }
+.studio-stage { flex: 1; min-height: 0; display: grid; place-items: center; padding: 6px 12px; }
+.studio-stage canvas { grid-area: 1 / 1; border-radius: 18px; }
+#rangoliCanvas { touch-action: none; cursor: crosshair; box-shadow: 0 0 0 1px rgba(242, 198, 109, .3), 0 12px 40px rgba(0, 0, 0, .55); }
+#rangoliGuide { pointer-events: none; }
+.studio-tools { width: min(100%, 720px); margin: 0 auto; display: grid; gap: 10px; padding: 8px 12px 14px; }
+.tool-row { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
+.swatch { width: 32px; height: 32px; border-radius: 50%; border: 2px solid rgba(255, 255, 255, .3); background: var(--c); }
+.swatch.rainbow { background: conic-gradient(#ff3b3b, #ffd166, #2ee88a, #22d3ee, #7c5cff, #ff2d95, #ff3b3b); }
+.swatch[aria-pressed="true"] { border-color: #fff; box-shadow: 0 0 0 3px rgba(255, 255, 255, .35); transform: scale(1.1); }
+.chip {
+  padding: 9px 13px; border-radius: 999px; white-space: nowrap;
+  border: 1px solid rgba(242, 198, 109, .32); background: rgba(12, 18, 64, .6);
+  font-weight: 600; font-size: clamp(.78rem, 3.2vw, .9rem);
+}
+.chip[aria-pressed="true"] { background: rgba(242, 198, 109, .22); border-color: var(--gold); }
+.chip.primary { background: linear-gradient(180deg, #ffe7ae, #e7b158); color: #1b1446; border-color: transparent; }
+
+/* ---------- Screen sizes ---------- */
+@media (max-width: 699px) { /* phones: the big diya with two smaller ones on each side */
+  .diya.d1 { --w: 48px; }
+  .diya.d2 { --w: 42px; }
+  .diya.d3, .diya.d4 { display: none; }
+}
+@media (min-height: 780px) {
+  .subtitle { display: block; }
+}
+@media (max-height: 640px) {
+  .diya.hero { --w: 84px; }
+  .content { padding-bottom: calc(100px + env(safe-area-inset-bottom)); }
+}
+@media (max-height: 560px) { /* phones held sideways: everything compact enough to fit the short screen */
+  .content { justify-content: center; padding-top: 16px; padding-bottom: calc(80px + env(safe-area-inset-bottom)); }
+  .panel { gap: 6px; }
+  .festival, .subtitle { display: none; }
+  .eyebrow.greet { height: 1.5em; font-size: 1rem; }
+  .title { font-size: clamp(2rem, 11vh, 3.2rem); }
+  .countdown { width: min(100%, 440px); }
+  .unit { padding: 5px 4px; }
+  .num { font-size: clamp(1.4rem, 8vh, 2.2rem); }
+  .label { font-size: .55rem; }
+  .diya.d1, .diya.d2, .diya.d3, .diya.d4 { --w: 36px; }
+  .diya.hero { --w: 64px; }
+  .intro { padding-top: 20px; padding-bottom: 12px; }
+  .intro-copy { gap: 6px; }
+  .intro-title { font-size: clamp(1.6rem, 9vh, 2.6rem); }
+  .big-diya { --w: clamp(140px, 42vh, 200px); }
+  .toast { top: calc(10px + env(safe-area-inset-top)); } /* above the title, level with the buttons */
+  #fireworks { touch-action: pan-y; } /* let short screens scroll */
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hang, .floor-mandala, .bk, .star { animation: none; }
+  .sparkles { display: none; }
+}
